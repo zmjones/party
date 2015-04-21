@@ -85,11 +85,11 @@ cforestfit <- function(object, controls, weights = NULL, fitmem = NULL, ...) {
 
     ### predict in the response space, always!
     RET@predict_response <- function(newdata = NULL, mincriterion = 0, 
-        type = c("response", "prob"), ...) { 
+        type = c("response", "prob"), subset = 1:length(ensemble), ...) {
 
         type <- match.arg(type)
         cdresp <- RET@cond_distr_response(newdata = newdata, 
-                                          mincriterion = mincriterion, ...)
+                                          mincriterion = mincriterion, subset = subset, ...)
         if (type == "prob" || object@responses@ninputs > 1)
             return(cdresp)
 
@@ -131,16 +131,17 @@ cforestfit <- function(object, controls, weights = NULL, fitmem = NULL, ...) {
     }
 
     RET@prediction_weights <- function(newdata = NULL, 
-                                       mincriterion = 0, OOB = FALSE) {
-
+                                       mincriterion = 0, OOB = FALSE, subset = 1:length(ensemble)) {
         newinp <- newinputs(object, newdata)
 
-        RET <- .Call("R_predictRF_weights", ensemble, bwhere, bweights, 
+        RET <- .Call("R_predictRF_weights", ensemble[subset], bwhere[subset],
+                     bweights[subset], 
                      newinp, mincriterion, OOB && is.null(newdata),
                      PACKAGE = "party")
         names(RET) <- rownames(newinp@variables)
         RET
     }
+
     return(RET)
 }
 

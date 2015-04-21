@@ -20,16 +20,16 @@ create_cond_list <- function(cond, threshold, xname, input) {
 
 
 
-## mincriterion = 0 so that complete tree is evaluated; 
+## mincriterion = 0 so that complete tree is evaluated;
 ## regulate size of considered tree here via, e.g., mincriterion = 0.95
 ## or when building the forest in the first place via cforest_control(mincriterion = 0.95)
 
-varimp <- function (object, mincriterion = 0, conditional = FALSE, 
+varimp <- function (object, mincriterion = 0, conditional = FALSE,
                     threshold = 0.2, nperm = 1, OOB = TRUE, pre1.0_0 = conditional)
 {
 
     response <- object@responses
-    if (length(response@variables) == 1 && 
+    if (length(response@variables) == 1 &&
         inherits(response@variables[[1]], "Surv"))
         return(varimpsurv(object, mincriterion, conditional, threshold, nperm, OOB, pre1.0_0))
     input <- object@data@get("input")
@@ -46,12 +46,12 @@ varimp <- function (object, mincriterion = 0, conditional = FALSE,
     CLASS <- all(response@is_nominal)
     ORDERED <- all(response@is_ordinal)
     if (CLASS) {
-        error <- function(x, oob) mean((levels(y)[sapply(x, which.max)] != 
+        error <- function(x, oob) mean((levels(y)[sapply(x, which.max)] !=
             y)[oob])
     }
     else {
         if (ORDERED) {
-            error <- function(x, oob) mean((sapply(x, which.max) != 
+            error <- function(x, oob) mean((sapply(x, which.max) !=
                 y)[oob])
         }
         else {
@@ -65,7 +65,7 @@ varimp <- function (object, mincriterion = 0, conditional = FALSE,
 
     ## list for several permutations
     perror <- matrix(0, nrow = nperm*length(object@ensemble), ncol = length(xnames))
-    ## this matrix is initialized with values 0 so that a tree that does not 
+    ## this matrix is initialized with values 0 so that a tree that does not
     ## contain the current variable adds importance 0 to its average importance
     colnames(perror) <- xnames
         for (b in 1:length(object@ensemble)){
@@ -77,7 +77,7 @@ varimp <- function (object, mincriterion = 0, conditional = FALSE,
             p <- .Call("R_predict", tree, inp, mincriterion, -1L, PACKAGE = "party")
             eoob <- error(p, oob)
 
-            ## for all variables (j = 1 ... number of variables) 
+            ## for all variables (j = 1 ... number of variables)
             for(j in unique(varIDs(tree))){
               for (per in 1:nperm){
 
@@ -109,7 +109,7 @@ varimp <- function (object, mincriterion = 0, conditional = FALSE,
 }
 
 
-varimpsurv <- function (object, mincriterion = 0, conditional = FALSE, 
+varimpsurv <- function (object, mincriterion = 0, conditional = FALSE,
                         threshold = 0.2, nperm = 1, OOB = TRUE, pre1.0_0 = conditional)
 {
 
@@ -149,7 +149,7 @@ varimpsurv <- function (object, mincriterion = 0, conditional = FALSE,
 
     ## list for several permutations
     perror <- matrix(0, nrow = nperm*length(object@ensemble), ncol = length(xnames))
-    ## this matrix is initialized with values 0 so that a tree that does not 
+    ## this matrix is initialized with values 0 so that a tree that does not
     ## contain the current variable adds importance 0 to its average importance
     colnames(perror) <- xnames
         for (b in 1:length(object@ensemble)){
@@ -161,7 +161,7 @@ varimpsurv <- function (object, mincriterion = 0, conditional = FALSE,
             p <- pred(tree, inp)
             eoob <- error(p, oob)
 
-            ## for all variables (j = 1 ... number of variables) 
+            ## for all variables (j = 1 ... number of variables)
             for(j in unique(varIDs(tree))){
               for (per in 1:nperm){
                  if (conditional || pre1.0_0) {
@@ -194,7 +194,7 @@ varimpsurv <- function (object, mincriterion = 0, conditional = FALSE,
 
 
 # cutpoints_list() returns:
-# - vector of cutpoints (length=number of cutpoints) 
+# - vector of cutpoints (length=number of cutpoints)
 #   if variable is continuous
 # - vector of indicators (length=number of categories x number of cutpoints)
 #   if variable is categorical (nominal or ordered)
@@ -215,13 +215,13 @@ cutpoints_list <- function(tree, variableID) {
 
 conditional_perm <- function(cond, xnames, input, tree, oob){
 
-    ## get cutpoints of all conditioning variables of the current variable of interest 
+    ## get cutpoints of all conditioning variables of the current variable of interest
     ## and generate design matrix for permutation from factors in help
     blocks <- vector(mode = "list", length = length(cond))
-                    
+
     for (i in 1:length(cond)) {
 
-        ## varID is variable index or column number of input (predictor matrix) 
+        ## varID is variable index or column number of input (predictor matrix)
         ## not variable name!
         varID <- which(xnames == cond[i])
 
@@ -239,7 +239,7 @@ conditional_perm <- function(cond, xnames, input, tree, oob){
         block <- switch(xclass, "numeric" = cut(x, breaks = c(-Inf, sort(unique(cl)), Inf)),
                         "ordered" = cut(as.numeric(x), breaks =  c(-Inf, sort(unique(cl)), Inf)),
                         "factor" = {
-                            CL <- matrix(as.logical(cl), nrow = nlevels(x))                            
+                            CL <- matrix(as.logical(cl), nrow = nlevels(x))
                             rs <- rowSums(CL)
                             dlev <- (1:nrow(CL))[rs %in% rs[duplicated(rs)]]
                             fuse <- c()
@@ -290,7 +290,7 @@ conditional_perm <- function(cond, xnames, input, tree, oob){
     }
 }
 
-varimpAUC <- function(object, mincriterion = 0, conditional = FALSE, 
+varimpAUC <- function(object, mincriterion = 0, conditional = FALSE,
                       threshold = 0.2, nperm = 1, OOB = TRUE, pre1.0_0 = conditional)
 {
 
@@ -308,11 +308,11 @@ varimpAUC <- function(object, mincriterion = 0, conditional = FALSE,
     }
     CLASS <- all(response@is_nominal)
     ORDERED <- all(response@is_ordinal)
-    if (CLASS) {      
+    if (CLASS) {
           if (nlevels(y)>2) {
             warning("AUC=TRUE works only for binary y\n error rate is used instead of AUC")
             error <- function(x, oob) mean((levels(y)[sapply(x, which.max)] != y)[oob])
-          }   
+          }
           else {
              error <- function(x, oob) {
                xoob <- sapply(x, function(x) x[1])[oob]
@@ -328,7 +328,7 @@ varimpAUC <- function(object, mincriterion = 0, conditional = FALSE,
     }
     else {
         if (ORDERED) {
-            error <- function(x, oob) mean((sapply(x, which.max) != 
+            error <- function(x, oob) mean((sapply(x, which.max) !=
                 y)[oob])
         }
         else {
@@ -369,11 +369,20 @@ varimpAUC <- function(object, mincriterion = 0, conditional = FALSE,
                 }
                 perror[(per+(b-1)*nperm), j] <- (error(p, oob) - eoob)
 
-              } 
-            } 
-        } 
+              }
+            }
+        }
 
     perror <- as.data.frame(perror)
     return(MeanDecreaseAccuracy = colMeans(perror, na.rm = TRUE)) ## na.rm = TRUE because with AUC-perm. VIM NA values occur whenever a tree's OOB-observations are all from the same class
 }
 
+predict_tree <- function(tree, inp, mincriterion = 0, xvar = NULL) {
+    if (is.null(xvar)) {
+        idx <- -1L
+    } else {
+        idx <- as.integer(which(xvar %in% colnames(inp@variables)))
+    }
+    p <- .Call("R_predict", tree, inp, mincriterion, idx, PACKAGE = "party")
+    return(p)
+}
